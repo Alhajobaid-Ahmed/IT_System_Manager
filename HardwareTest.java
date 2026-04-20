@@ -32,7 +32,13 @@ public class HardwareTest extends JPanel {
 
         // voice test (beep sound)
         btnSound.addActionListener(e -> {
-            Toolkit.getDefaultToolkit().beep(); // simple beep sound
+            new Thread(() -> {
+                try {
+                    playDiagnosticTone();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Error playing sound: " + ex.getMessage());
+                }
+            }).start();
             JOptionPane.showMessageDialog(this, "Did you hear the beep? If yes, speakers are OK!");
         });
 
@@ -97,6 +103,29 @@ public class HardwareTest extends JPanel {
         });
         f.add(p);
         f.setVisible(true);
+    }
+
+    private void playDiagnosticTone() throws Exception {
+        float sampleRate = 8000f; 
+        int durationMs = 1000; 
+        int hz = 800; 
+
+        byte[] buf = new byte[1];
+        javax.sound.sampled.AudioFormat af = new javax.sound.sampled.AudioFormat(sampleRate, 8, 1, true, false);
+        javax.sound.sampled.SourceDataLine sdl = javax.sound.sampled.AudioSystem.getSourceDataLine(af);
+
+        sdl.open(af);
+        sdl.start();
+
+        for (int i = 0; i < (sampleRate * durationMs / 1000); i++) {
+            double angle = i / (sampleRate / hz) * 2.0 * Math.PI;
+            buf[0] = (byte) (Math.sin(angle) * 127.0);
+            sdl.write(buf, 0, 1);
+        }
+
+        sdl.drain();
+        sdl.stop();
+        sdl.close();
     }
 
     private void styleButton(JButton b) {

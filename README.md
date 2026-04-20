@@ -1,4 +1,4 @@
-#  IT-Systemelektroniker Professional Tool
+#   Professional Tool Tests & checks PC DEVICES:
 
 A comprehensive Java-based system diagnostic and hardware testing tool designed for IT professionals. 
 
