@@ -94,21 +94,34 @@ public class HardwareTest extends JPanel {
         f.setUndecorated(true);
         f.setExtendedState(JFrame.MAXIMIZED_BOTH);
         JPanel p = new JPanel();
-        p.setBackground(Color.RED);
+        Color[] testColors = { Color.RED, Color.GREEN, Color.BLUE, Color.WHITE, Color.BLACK };
+        final int[] colorIndex = { 0 };
+        p.setBackground(testColors[colorIndex[0]]);
         p.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                f.dispose();
+                colorIndex[0]++; // الانتقال للون التالي
+
+                if (colorIndex[0] < testColors.length) {
+                    // إذا لم تنتهِ الألوان، قم بتغيير الخلفية
+                    p.setBackground(testColors[colorIndex[0]]);
+                } else {
+                    // إذا انتهت كل الألوان، أغلق نافذة الاختبار
+                    f.dispose();
+                }
             }
         });
         f.add(p);
+        f.setCursor(f.getToolkit().createCustomCursor(
+                new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB), new Point(0, 0),
+                "blank cursor"));
         f.setVisible(true);
     }
 
     private void playDiagnosticTone() throws Exception {
-        float sampleRate = 8000f; 
-        int durationMs = 1000; 
-        int hz = 800; 
+        float sampleRate = 8000f;
+        int durationMs = 1000;
+        int hz = 800;
 
         byte[] buf = new byte[1];
         javax.sound.sampled.AudioFormat af = new javax.sound.sampled.AudioFormat(sampleRate, 8, 1, true, false);
