@@ -1,5 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import javax.swing.*;
 
 public class HardwareTest extends JPanel {
@@ -12,6 +14,7 @@ public class HardwareTest extends JPanel {
         JButton btnMouse = new JButton("🖱️ Mouse Buttons Test");
         JButton btnKey = new JButton("⌨️ Keyboard Keys Test");
         JButton btnSound = new JButton("🔊 Speaker Beep Test");
+        JButton btnPing = new JButton("🌐 Network Ping Test");
         JButton btnBack = new JButton("⬅️ Back to Main Menu");
 
         // button styling
@@ -19,6 +22,7 @@ public class HardwareTest extends JPanel {
         styleButton(btnMouse);
         styleButton(btnKey);
         styleButton(btnSound);
+        styleButton(btnPing);
         styleButton(btnBack, Color.RED);
 
         // screen test
@@ -42,6 +46,18 @@ public class HardwareTest extends JPanel {
             JOptionPane.showMessageDialog(this, "Did you hear the beep? If yes, speakers are OK!");
         });
 
+        // network test (ping)
+        btnPing.addActionListener(e -> {
+            new Thread(() -> {
+                try {
+                    // عمل Ping لسيرفر جوجل 4 مرات
+                    String output = runPingTest("8.8.8.8");
+                    JOptionPane.showMessageDialog(this, "Network Status:\n" + output);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Ping Failed!");
+                }
+            }).start();
+        });
         // return to main menu
         btnBack.addActionListener(e -> {
             parentFrame.remove(this);
@@ -54,9 +70,11 @@ public class HardwareTest extends JPanel {
         add(btnMouse);
         add(btnKey);
         add(btnSound);
+        add(btnPing);
         add(btnBack);
     }
 
+    // mouse test function
     private void runMouseTest() {
         JFrame f = new JFrame("Click Test");
         f.setSize(300, 200);
@@ -71,6 +89,21 @@ public class HardwareTest extends JPanel {
             }
         });
         f.setVisible(true);
+    }
+
+    // ping test function
+    private String runPingTest(String host) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder("ping", "-n", "4", host);
+        Process p = pb.start();
+        BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = r.readLine()) != null) {
+            if (line.contains("Average") || line.contains("Lost")) {
+                sb.append(line.trim()).append("\n");
+            }
+        }
+        return sb.length() > 0 ? sb.toString() : "Connection Error!";
     }
 
     // keyboard test function (opens a new window)
@@ -89,6 +122,7 @@ public class HardwareTest extends JPanel {
         f.setVisible(true);
     }
 
+    // screen test function (cycles through colors)
     private void runScreenTest() {
         JFrame f = new JFrame();
         f.setUndecorated(true);
@@ -100,13 +134,11 @@ public class HardwareTest extends JPanel {
         p.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                colorIndex[0]++; // الانتقال للون التالي
+                colorIndex[0]++;
 
                 if (colorIndex[0] < testColors.length) {
-                    // إذا لم تنتهِ الألوان، قم بتغيير الخلفية
                     p.setBackground(testColors[colorIndex[0]]);
                 } else {
-                    // إذا انتهت كل الألوان، أغلق نافذة الاختبار
                     f.dispose();
                 }
             }
@@ -118,6 +150,7 @@ public class HardwareTest extends JPanel {
         f.setVisible(true);
     }
 
+    // function to play a diagnostic beep sound
     private void playDiagnosticTone() throws Exception {
         float sampleRate = 8000f;
         int durationMs = 1000;
@@ -125,26 +158,25 @@ public class HardwareTest extends JPanel {
 
         byte[] buf = new byte[1];
         javax.sound.sampled.AudioFormat af = new javax.sound.sampled.AudioFormat(sampleRate, 8, 1, true, false);
-        javax.sound.sampled.SourceDataLine sdl = javax.sound.sampled.AudioSystem.getSourceDataLine(af);
-
-        sdl.open(af);
-        sdl.start();
-
-        for (int i = 0; i < (sampleRate * durationMs / 1000); i++) {
-            double angle = i / (sampleRate / hz) * 2.0 * Math.PI;
-            buf[0] = (byte) (Math.sin(angle) * 127.0);
-            sdl.write(buf, 0, 1);
+        try (javax.sound.sampled.SourceDataLine sdl = javax.sound.sampled.AudioSystem.getSourceDataLine(af)) {
+            sdl.open(af);
+            sdl.start();
+            for (int i = 0; i < (sampleRate * durationMs / 1000); i++) {
+                double angle = i / (sampleRate / hz) * 2.0 * Math.PI;
+                buf[0] = (byte) (Math.sin(angle) * 127.0);
+                sdl.write(buf, 0, 1);
+            }
+            sdl.drain();
+            sdl.stop();
         }
-
-        sdl.drain();
-        sdl.stop();
-        sdl.close();
     }
 
+    // button styling helper
     private void styleButton(JButton b) {
         styleButton(b, new Color(0, 255, 100));
     }
 
+    // overloaded styling for back button
     private void styleButton(JButton b, Color edge) {
         b.setBackground(new Color(40, 40, 40));
         b.setForeground(Color.WHITE);

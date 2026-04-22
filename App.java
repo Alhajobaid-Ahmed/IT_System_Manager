@@ -57,11 +57,17 @@ public class App {
                     updateLog(console, "[+] Identifying Processor...");
                     String cpu = getCmdOutput("wmic cpu get name");
 
+                    updateLog(console, "[+] Fetching GPU Information...");
+                    String gpu = getCmdOutput("wmic path Win32_VideoController get Name");
+
                     updateLog(console, "[+] Analyzing Memory (RAM)...");
                     String ram = getCmdOutput("wmic ComputerSystem get TotalPhysicalMemory");
 
                     updateLog(console, "[+] Scanning Storage (Hard Drives)...");
                     String disk = getCmdOutput("wmic logicaldisk get size,freespace,caption");
+
+                    updateLog(console, "[+] Checking Battery Health...");
+                    String battery = getCmdOutput("wmic path win32_battery get DesignCapacity,FullChargeCapacity");
 
                     updateLog(console, "[+] Listing Connected USB/PnP Devices...");
                     String devices = getCmdOutput(
@@ -74,6 +80,31 @@ public class App {
                         console.append("LOCAL IP  : " + ip + "\n");
                         console.append("SERIAL NO : " + sn.replace("SerialNumber", "").trim() + "\n");
                         console.append("CPU       : " + cpu.replace("Name", "").trim() + "\n");
+                        console.append("GPU       : " + gpu.replace("Name", "").trim() + "\n");
+
+                        if (battery != null && battery.contains("\n") && battery.split("\n").length > 1
+                                && !battery.split("\n")[1].trim().isEmpty()) {
+                            String[] vals = battery.trim().split("\n")[1].trim().split("\\s+");
+                            if (vals.length >= 2) {
+                                long design = Long.parseLong(vals[0]);
+                                long full = Long.parseLong(vals[1]);
+                                long health = (full * 100) / design;
+                                console.append(
+                                        "BATTERY   : " + health + "% Health (" + full + " / " + design + " mWh)\n");
+                            }
+                        } else {
+                            try {
+                                String status = getCmdOutput("wmic path Win32_Battery get Availability, BatteryStatus");
+                                if (status.contains("2") || status.contains("3")) { 
+                                    console.append(
+                                            "BATTERY   : Detected & Functioning (Detailed stats blocked by BIOS)\n");
+                                } else {
+                                    console.append("BATTERY   : Desktop PC Mode (No internal battery detected)\n");
+                                }
+                            } catch (Exception ex) {
+                                console.append("BATTERY   : System cannot access Battery Controller\n");
+                            }
+                        }
 
                         if (!ram.split("\n")[1].trim().isEmpty()) {
                             long ramBytes = Long.parseLong(ram.split("\n")[1].trim());
